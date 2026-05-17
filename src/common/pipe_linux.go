@@ -1,6 +1,7 @@
 //go:build linux
 
 // Package common proporciona utilidades compartidas por todos los servicios.
+// BORRADOR: implementación temporal para permitir compilación de gesprog.
 package common
 
 import (
@@ -9,30 +10,25 @@ import (
 	"syscall"
 )
 
-// AbrirPipeLectura abre un FIFO existente en modo lectura.
-// Lo crea si no existe.
-func AbrirPipeLectura(ruta string) (*os.File, error) {
-	if err := crearFIFO(ruta); err != nil {
-		return nil, err
+// AbrirPipes abre los dos FIFOs necesarios para comunicación half-duplex en Linux.
+// Crea los FIFOs si no existen.
+func AbrirPipes(pipePeticiones, pipeRespuestas string) (*os.File, *os.File, error) {
+	if err := crearFIFO(pipePeticiones); err != nil {
+		return nil, nil, err
 	}
-	f, err := os.OpenFile(ruta, os.O_RDONLY, os.ModeNamedPipe)
+	if err := crearFIFO(pipeRespuestas); err != nil {
+		return nil, nil, err
+	}
+	entrada, err := os.OpenFile(pipePeticiones, os.O_RDONLY, os.ModeNamedPipe)
 	if err != nil {
-		return nil, fmt.Errorf("AbrirPipeLectura: %w", err)
+		return nil, nil, fmt.Errorf("AbrirPipes: %w", err)
 	}
-	return f, nil
-}
-
-// AbrirPipeEscritura abre un FIFO existente en modo escritura.
-// Lo crea si no existe.
-func AbrirPipeEscritura(ruta string) (*os.File, error) {
-	if err := crearFIFO(ruta); err != nil {
-		return nil, err
-	}
-	f, err := os.OpenFile(ruta, os.O_WRONLY, os.ModeNamedPipe)
+	salida, err := os.OpenFile(pipeRespuestas, os.O_WRONLY, os.ModeNamedPipe)
 	if err != nil {
-		return nil, fmt.Errorf("AbrirPipeEscritura: %w", err)
+		entrada.Close()
+		return nil, nil, fmt.Errorf("AbrirPipes: %w", err)
 	}
-	return f, nil
+	return entrada, salida, nil
 }
 
 // crearFIFO crea un FIFO en la ruta dada si no existe.
