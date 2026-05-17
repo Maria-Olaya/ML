@@ -1,4 +1,4 @@
-package gesprog
+package main
 
 import (
 	"encoding/json"

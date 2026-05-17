@@ -1,5 +1,5 @@
 // Package gesprog gestiona programas almacenados en disco.
-package gesprog
+package main
 
 import (
 	"bufio"

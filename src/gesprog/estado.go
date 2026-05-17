@@ -1,5 +1,4 @@
-// Package gesprog gestiona programas almacenados en disco.
-package gesprog
+package main
 
 import (
 	"fmt"
@@ -10,9 +9,9 @@ import (
 type EstadoServicio int
 
 const (
-	estadoInicio    EstadoServicio = iota
-	estadoCorriendo               // acepta todas las operaciones
-	estadoSuspendido              // solo permite Leer
+	estadoInicio     EstadoServicio = iota
+	estadoCorriendo                 // acepta todas las operaciones
+	estadoSuspendido                // solo permite Leer
 	estadoTerminado
 )
 
