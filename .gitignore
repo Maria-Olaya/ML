@@ -1,0 +1,26 @@
+# Binarios y artefactos de compilación
+bin/
+*.exe
+*.out
+*.test
+*.prof
+
+# Dependencias
+vendor/
+go.sum
+
+# Almacenamiento local (generado en runtime)
+aralmac/
+
+# Named pipes temporales
+/tmp/lotes/
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
