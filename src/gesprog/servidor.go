@@ -1,31 +1,29 @@
-// Package gesprog gestiona programas almacenados en disco.
 package main
 
 import (
 	"bufio"
 	"fmt"
 	"io"
-	"os"
+
+	"github.com/SofiAlfonso/Ejecutor_de_Lotes/src/common"
 )
+
+const maxMsgLen = 4096
 
 // Servidor escucha peticiones desde el pipe de entrada y escribe respuestas
 // en el pipe de salida. Corre hasta que el servicio pase a estado Terminado.
-func Servidor(pipeLectura, pipeEscritura string) error {
-	// Abrir pipe de lectura (bloqueante hasta que haya un escritor)
-	entrada, err := abrirPipeLectura(pipeLectura)
+func Servidor(pipePeticiones, pipeRespuestas string) error {
+	// Usar common.AbrirPipes: en Windows crea el pipe y espera conexión;
+	// en Linux abre los FIFOs existentes.
+	entrada, salida, err := common.AbrirPipes(pipePeticiones, pipeRespuestas)
 	if err != nil {
-		return fmt.Errorf("servidor: no se pudo abrir pipe de lectura: %w", err)
+		return fmt.Errorf("servidor: %w", err)
 	}
 	defer entrada.Close()
-
-	// Abrir pipe de escritura
-	salida, err := abrirPipeEscritura(pipeEscritura)
-	if err != nil {
-		return fmt.Errorf("servidor: no se pudo abrir pipe de escritura: %w", err)
-	}
 	defer salida.Close()
 
 	scanner := bufio.NewScanner(entrada)
+	scanner.Buffer(make([]byte, maxMsgLen), maxMsgLen)
 	writer := bufio.NewWriter(salida)
 
 	for scanner.Scan() {
@@ -34,10 +32,8 @@ func Servidor(pipeLectura, pipeEscritura string) error {
 			continue
 		}
 
-		// Procesar petición y obtener respuesta
 		respuesta := ProcesarPeticion(linea)
 
-		// Escribir respuesta seguida de salto de línea (protocolo)
 		if _, err := writer.Write(respuesta); err != nil {
 			return fmt.Errorf("servidor: error escribiendo respuesta: %w", err)
 		}
@@ -48,7 +44,6 @@ func Servidor(pipeLectura, pipeEscritura string) error {
 			return fmt.Errorf("servidor: error en flush: %w", err)
 		}
 
-		// Si la operación fue Terminar, salir del bucle
 		if EstaTerminado() {
 			break
 		}
@@ -58,24 +53,4 @@ func Servidor(pipeLectura, pipeEscritura string) error {
 		return fmt.Errorf("servidor: error leyendo pipe: %w", err)
 	}
 	return nil
-}
-
-// abrirPipeLectura abre el pipe de entrada en modo lectura.
-// En Linux es un FIFO, en Windows es un Named Pipe.
-func abrirPipeLectura(ruta string) (*os.File, error) {
-	f, err := os.OpenFile(ruta, os.O_RDONLY, os.ModeNamedPipe)
-	if err != nil {
-		return nil, fmt.Errorf("abrirPipeLectura: %w", err)
-	}
-	return f, nil
-}
-
-// abrirPipeEscritura abre el pipe de salida en modo escritura.
-// En Linux es un FIFO, en Windows es un Named Pipe.
-func abrirPipeEscritura(ruta string) (*os.File, error) {
-	f, err := os.OpenFile(ruta, os.O_WRONLY, os.ModeNamedPipe)
-	if err != nil {
-		return nil, fmt.Errorf("abrirPipeEscritura: %w", err)
-	}
-	return f, nil
 }
